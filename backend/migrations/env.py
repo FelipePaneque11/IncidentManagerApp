@@ -2,8 +2,15 @@ from logging.config import fileConfig
 
 from alembic import context
 
+from sqlalchemy import create_engine
 from database import engine
 from models import Base
+
+migration_options = context.get_x_argument(as_dictionary=True)
+if "database" in migration_options:
+    engine = create_engine(
+        engine.url.set(database=migration_options["database"])
+    )
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
