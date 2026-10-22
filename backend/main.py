@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from uuid import uuid4
-from schemas import IncidentCreate
+from schemas import IncidentCreate, IncidentUpdate
 
 app = FastAPI(title = "Incident Manager API")
 
@@ -42,3 +42,20 @@ def get_incident(incident_id: str):
         status_code=404,
         detail= "Incident not found"
     )
+
+@app.put("/incidents/{incident_id}")
+def update_incident(incident_id:str, update: IncidentUpdate):
+    for incident in incidents:
+        if incident["id"] == incident_id:
+            incident["title"] = update.title
+            incident["description"] = update.description
+            incident["priority"] = update.priority
+            incident["status"] = update.status
+
+            return incident
+
+    raise HTTPException(
+        status_code=404,
+        detail="Incident not found"
+    )
+

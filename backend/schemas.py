@@ -8,3 +8,8 @@ class IncidentCreate(BaseModel):
     title: str = Field(min_length=3, max_length=100)
     description: str = Field(min_length=10, max_length=2000)
     priority: Literal["low", "medium", "high", "critical"] = "medium"
+
+#inheritance- IncidentUpdate class inherits attributes from IncidentCreate class.
+class IncidentUpdate(IncidentCreate):
+    priority: Literal['low', 'medium', 'high', 'critical']
+    status: Literal["open", "investigating", "resolved"]

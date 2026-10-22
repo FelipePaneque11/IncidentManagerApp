@@ -6,6 +6,7 @@ from main import app
 
 client = TestClient(app)
 
+#1
 def test_valid_incident():
     incident = IncidentCreate(
         title= " Payment API unavailable   ",
@@ -15,6 +16,7 @@ def test_valid_incident():
     assert incident.title == "Payment API unavailable"
     assert incident.priority == "medium"
 
+#2
 def test_blank_title_is_rejected():
     with pytest.raises(ValidationError):
         IncidentCreate(
@@ -22,6 +24,7 @@ def test_blank_title_is_rejected():
             description="Customers cant complete their payments."
         )
 
+#3
 def test_create_incident():
     #payload holds the data we want to submit
     payload = {
@@ -42,6 +45,7 @@ def test_create_incident():
     assert incident["status"] == "open"
     assert incident["id"]
 
+#4
 def test_list_incidents():
       payload = {
         "title": "Database backup failed",
@@ -59,6 +63,7 @@ def test_list_incidents():
       assert response.status_code == 200
       assert created_incident in response.json()
 
+#5
 def test_get_incident_by_id():
     payload = {
         "title": "Database backup failed",
@@ -77,8 +82,57 @@ def test_get_incident_by_id():
     assert response.status_code == 200
     assert response.json() == created_incident
 
+#6
 def test_get_missing_incident():
     response = client.get("/incidents/missing-id")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail":"Incident not found"}
+
+#7
+def test_update_incident():
+    create_response = client.post("/incidents", json ={
+        "title": "Payment API unavailable",
+        "description": "Customers cant complete their payments.",
+        "priority":"high"
+    })
+    assert create_response.status_code == 201
+
+    incident_id = create_response.json()["id"]
+
+    #updating our incident. 
+    response = client.put(f"/incidents/{incident_id}" , json={
+        "title": "Payment outage under investigation",
+        "description": "The team is investigating the payment service.",
+        "priority": "critical",
+        "status": "investigating"
+    })
+
+    assert response.status_code == 200
+
+    updated = response.json()
+
+    #checking if incident was updated correctly
+    assert updated["id"] == incident_id
+    assert updated["title"] == "Payment outage under investigation"
+    assert updated["description"] == "The team is investigating the payment service."
+    assert updated["priority"] == "critical"
+    assert updated["status"] == "investigating"
+
+    #clients.get checks if changed the stored incident, rather than merely returning different data.
+    #8
+    read_response = client.get(f"/incidents/{incident_id}")
+    assert read_response.status_code == 200
+    assert read_response.json() == updated
+
+#9
+def test_update_missing_incident():
+    response = client.put("/incidents/missing_id", json={
+        "title": "Updated incident",
+        "description": "This incident does not exist.",
+        "priority": "low",
+        "status": "investigating"
+    })
 
     assert response.status_code == 404
     assert response.json() == {"detail":"Incident not found"}
