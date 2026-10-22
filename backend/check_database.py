@@ -1,10 +1,11 @@
-from sqlalchemy import text
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from database import engine
+from models import Incident
 
 #obtains a database connection
-with engine.connect() as connection:
-    result = connection.execute(
-        text("SELECT current_database(), current_user")
-    )
+with Session(engine) as session:
+    incidents = session.scalars(select(Incident)).all()
 
-    print(result.one())
+    print(f"Incidents stored in PostgreSQL: {len(incidents)}")

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
+from sqlalchemy.orm import Session
 
 #finds the full path of database.py | locates .env in the project root
 env_file = Path(__file__).resolve().parent.parent / ".env"
@@ -20,3 +21,10 @@ database_url = URL.create(
 
 #Creates SQLAlchemy’s connection manager
 engine = create_engine(database_url)
+
+def get_db():
+    #creates a session using our configured engine
+    with Session(engine) as session:
+        #this will hand the session to a FastAPI endpoint.
+        #Unlike return, yield pauses the function, allowing it to resume afterward
+        yield session
