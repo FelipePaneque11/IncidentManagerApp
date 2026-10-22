@@ -41,3 +41,20 @@ def test_create_incident():
     assert incident["priority"] == "high"
     assert incident["status"] == "open"
     assert incident["id"]
+
+def test_list_incidents():
+      payload = {
+        "title": "Database backup failed",
+        "description": "The scheduled database backup did not complete.",
+        "priority": "high"
+    }
+
+      create_response = client.post("/incidents", json=payload)
+      assert create_response.status_code == 201
+
+      created_incident = create_response.json()
+
+      response = client.get("/incidents")
+
+      assert response.status_code == 200
+      assert created_incident in response.json()

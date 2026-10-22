@@ -11,6 +11,11 @@ incidents = []
 def health_check():
     return {"status":"ok"}
 
+@app.get("/incidents", status_code=200)
+def get_incidents():
+    return incidents
+
+
 @app.post("/incidents", status_code=201)
 def create_incident(incident: IncidentCreate):
     new_incident={
