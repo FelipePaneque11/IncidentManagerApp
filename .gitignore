@@ -1,0 +1,17 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Generated Python files
+__pycache__/
+*.py[cod]
+
+# Test output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environment variables
+.env
+.env.*
+!.env.example
