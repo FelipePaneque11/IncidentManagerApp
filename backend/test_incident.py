@@ -1,10 +1,6 @@
 import pytest
 from pydantic import ValidationError
 from schemas import IncidentCreate
-from fastapi.testclient import TestClient
-from main import app
-
-client = TestClient(app)
 
 #1
 def test_valid_incident():
@@ -25,7 +21,7 @@ def test_blank_title_is_rejected():
         )
 
 #3
-def test_create_incident():
+def test_create_incident(client):
     #payload holds the data we want to submit
     payload = {
         "title":"Payment API unavailable",
@@ -46,7 +42,7 @@ def test_create_incident():
     assert incident["id"]
 
 #4
-def test_list_incidents():
+def test_list_incidents(client):
       payload = {
         "title": "Database backup failed",
         "description": "The scheduled database backup did not complete.",
@@ -64,7 +60,7 @@ def test_list_incidents():
       assert created_incident in response.json()
 
 #5
-def test_get_incident_by_id():
+def test_get_incident_by_id(client):
     payload = {
         "title": "Database backup failed",
         "description": "The scheduled database backup did not complete.",
@@ -83,14 +79,14 @@ def test_get_incident_by_id():
     assert response.json() == created_incident
 
 #6
-def test_get_missing_incident():
+def test_get_missing_incident(client):
     response = client.get("/incidents/missing-id")
 
     assert response.status_code == 404
     assert response.json() == {"detail":"Incident not found"}
 
 #7
-def test_update_incident():
+def test_update_incident(client):
     create_response = client.post("/incidents", json ={
         "title": "Payment API unavailable",
         "description": "Customers cant complete their payments.",
@@ -126,7 +122,7 @@ def test_update_incident():
     assert read_response.json() == updated
 
 #9
-def test_update_missing_incident():
+def test_update_missing_incident(client):
     response = client.put("/incidents/missing_id", json={
         "title": "Updated incident",
         "description": "This incident does not exist.",
@@ -138,7 +134,7 @@ def test_update_missing_incident():
     assert response.json() == {"detail":"Incident not found"}
 
 #10
-def test_delete_incident():
+def test_delete_incident(client):
     create_response = client.post("/incidents", json={
         "title": "Duplicate incident report",
         "description": "This incident was accidentally reported twice.",
@@ -160,7 +156,7 @@ def test_delete_incident():
     assert read_response.json() == {"detail":"Incident not found"}
 
 #11
-def test_delete_missing_incident():
+def test_delete_missing_incident(client):
     response = client.delete("/incidents/missing-id")
 
     assert response.status_code == 404
