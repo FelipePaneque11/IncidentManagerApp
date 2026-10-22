@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from uuid import uuid4
 from schemas import IncidentCreate, IncidentUpdate
 
@@ -59,3 +59,18 @@ def update_incident(incident_id:str, update: IncidentUpdate):
         detail="Incident not found"
     )
 
+@app.delete("/incidents/{incident_id}", status_code=204)
+def delete_incident(incident_id:str):
+    for incident in incidents:
+        if incident["id"] == incident_id:
+            incidents.remove(incident)
+
+            return Response(status_code=204)
+
+
+    raise HTTPException(
+        status_code=404,
+        detail="Incident not found"
+    )
+
+    

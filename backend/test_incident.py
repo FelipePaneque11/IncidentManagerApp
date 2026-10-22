@@ -136,3 +136,32 @@ def test_update_missing_incident():
 
     assert response.status_code == 404
     assert response.json() == {"detail":"Incident not found"}
+
+#10
+def test_delete_incident():
+    create_response = client.post("/incidents", json={
+        "title": "Duplicate incident report",
+        "description": "This incident was accidentally reported twice.",
+        "priority": "low"
+    })
+
+    assert create_response.status_code == 201
+
+    incident_id = create_response.json()["id"]
+
+    response = client.delete(f"/incidents/{incident_id}")
+
+    assert response.status_code == 204
+    assert response.content == b"" #checks if response body is empty
+    #checks if incident was actually removed and returns a 404
+    read_response = client.get(f"/incidents/{incident_id}")
+
+    assert read_response.status_code == 404
+    assert read_response.json() == {"detail":"Incident not found"}
+
+#11
+def test_delete_missing_incident():
+    response = client.delete("/incidents/missing-id")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail":"Incident not found"}
