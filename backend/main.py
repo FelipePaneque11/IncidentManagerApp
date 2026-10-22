@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from uuid import uuid4
 from schemas import IncidentCreate
 
@@ -31,3 +31,14 @@ def create_incident(incident: IncidentCreate):
     incidents.append(new_incident)
 
     return new_incident
+
+@app.get("/incidents/{incident_id}")
+def get_incident(incident_id: str):
+    for incident in incidents:
+        if incident["id"] == incident_id:
+            return incident
+
+    raise HTTPException(
+        status_code=404,
+        detail= "Incident not found"
+    )

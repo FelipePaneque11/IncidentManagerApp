@@ -58,3 +58,27 @@ def test_list_incidents():
 
       assert response.status_code == 200
       assert created_incident in response.json()
+
+def test_get_incident_by_id():
+    payload = {
+        "title": "Database backup failed",
+        "description": "The scheduled database backup did not complete.",
+        "priority": "high"
+    }
+
+    create_response = client.post("/incidents", json=payload)
+    assert create_response.status_code == 201
+
+    created_incident = create_response.json()
+    incident_id = created_incident["id"]
+
+    response = client.get(f"/incidents/{incident_id}")
+
+    assert response.status_code == 200
+    assert response.json() == created_incident
+
+def test_get_missing_incident():
+    response = client.get("/incidents/missing-id")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail":"Incident not found"}
