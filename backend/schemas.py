@@ -13,3 +13,12 @@ class IncidentCreate(BaseModel):
 class IncidentUpdate(IncidentCreate):
     priority: Literal['low', 'medium', 'high', 'critical']
     status: Literal["open", "investigating", "resolved"]
+
+class IncidentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    title: str
+    description: str
+    priority: Literal["low", "medium", "high", "critical"]
+    status: Literal["open", "investigating", "resolved"]

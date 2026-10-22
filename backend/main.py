@@ -1,76 +1,90 @@
-from fastapi import FastAPI, HTTPException, Response
 from uuid import uuid4
-from schemas import IncidentCreate, IncidentUpdate
+
+from fastapi import Depends, FastAPI, HTTPException, Response
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from database import get_db
+from models import Incident
+from schemas import IncidentCreate, IncidentUpdate, IncidentRead
 
 app = FastAPI(title = "Incident Manager API")
 
-##temporary storage list
-incidents = []
 
 @app.get("/health")
 def health_check():
     return {"status":"ok"}
 
-@app.get("/incidents", status_code=200)
-def get_incidents():
-    return incidents
+#add an incident
+@app.post("/incidents", status_code=201, response_model=IncidentRead)
+def get_incidents(
+    incident: IncidentCreate,
+    db: Session = Depends(get_db)
+):
+    new_incident = Incident(
+        id=str(uuid4()),
+        title=incident.title,
+        description=incident.description,
+        priority=incident.priority,
+        status="open"
+    )
 
-
-@app.post("/incidents", status_code=201)
-def create_incident(incident: IncidentCreate):
-    new_incident={
-        ##uuid generates a unique ID for the incident
-        ##str converts it to text
-        "id":str(uuid4()),
-        "title":incident.title,
-        "description":incident.description,
-        "priority":incident.priority,
-        "status":"open"
-    }
-
-    incidents.append(new_incident)
+    db.add(new_incident)
+    db.commit()
+    db.refresh(new_incident)
 
     return new_incident
 
-@app.get("/incidents/{incident_id}")
-def get_incident(incident_id: str):
-    for incident in incidents:
-        if incident["id"] == incident_id:
-            return incident
+#get all incidents
+@app.get("/incidents", response_model=list[IncidentRead])
+def get_incidents(db: Session = Depends(get_db)):
+    return db.scalars(select(Incident)).all()
 
-    raise HTTPException(
-        status_code=404,
-        detail= "Incident not found"
-    )
+#get incident by ID
+@app.get("/incidents/{incident_id}", response_model=IncidentRead)
+def get_incident(
+    incident_id: str,
+    db: Session = Depends(get_db)
+):
+    incident = db.get(Incident, incident_id)
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return incident
 
-@app.put("/incidents/{incident_id}")
-def update_incident(incident_id:str, update: IncidentUpdate):
-    for incident in incidents:
-        if incident["id"] == incident_id:
-            incident["title"] = update.title
-            incident["description"] = update.description
-            incident["priority"] = update.priority
-            incident["status"] = update.status
+#Update an incident
+@app.put("/incidents/{incident_id}", response_model=IncidentRead)
+def update_incident(
+    incident_id:str, 
+    update: IncidentUpdate,
+    db: Session = Depends(get_db)
+):
+    incident = db.get(Incident, incident_id)
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
 
-            return incident
+    incident.title= update.title
+    incident.description= update.description
+    incident.priority= update.priority
+    incident.status= update.status
 
-    raise HTTPException(
-        status_code=404,
-        detail="Incident not found"
-    )
+    db.commit()
+    db.refresh(incident)
 
+    return incident
+
+#delete an incident
 @app.delete("/incidents/{incident_id}", status_code=204)
-def delete_incident(incident_id:str):
-    for incident in incidents:
-        if incident["id"] == incident_id:
-            incidents.remove(incident)
+def delete_incident(
+    incident_id:str,
+    db: Session = Depends(get_db)
+):
+    incident = db.get(Incident, incident_id)
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
 
-            return Response(status_code=204)
+    db.delete(incident)
+    db.commit()
 
-
-    raise HTTPException(
-        status_code=404,
-        detail="Incident not found"
-    )
+    return Response(status_code=204)
 
     
