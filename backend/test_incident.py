@@ -21,12 +21,16 @@ def test_blank_title_is_rejected():
         )
 
 #3
-def test_create_incident(client):
+@pytest.mark.parametrize(
+        "priority",
+        ["low", "medium", "high", "critical"]
+)
+def test_create_incident(client, priority):
     #payload holds the data we want to submit
     payload = {
         "title":"Payment API unavailable",
         "description":"Customers cant complete their payment",
-        "priority":"high"
+        "priority": priority
     }
 
     #sends the data as a JSON request body
@@ -37,7 +41,7 @@ def test_create_incident(client):
     incident = response.json()
 
     assert incident["title"] == payload["title"]
-    assert incident["priority"] == "high"
+    assert incident["priority"] == priority
     assert incident["status"] == "open"
     assert incident["id"]
 
@@ -161,3 +165,20 @@ def test_delete_missing_incident(client):
 
     assert response.status_code == 404
     assert response.json() == {"detail":"Incident not found"}
+
+#12
+#if a user tries to set a priority outside our list [low,medium,high,critical]
+#the system will validadate and fail the request
+@pytest.mark.parametrize(
+    "priority",
+    ["urgent", "HIGH", ""]
+)
+def test_invalid_priority_is_rejected(client, priority):
+    response = client.post("/incidents", json={
+        "title":"Payment API unavailable",
+        "description":"Customers cant complete their payments",
+        "priority":priority
+    })
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "priority"]
