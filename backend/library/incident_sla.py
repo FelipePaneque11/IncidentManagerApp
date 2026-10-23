@@ -24,5 +24,11 @@ def calculate_deadline(created_at:datetime, priority:str) -> datetime:
         raise ValueError("Unsupported incident priority")
 
     hours = SLA_HOURS[priority]
-    
+
     return created_at + timedelta(hours=hours)
+
+#method to check if an incident is overdue
+def is_overdue( deadline: datetime, status:str,  now:datetime,) -> bool:
+    if status == "resolved":
+        return False
+    return now >= deadline

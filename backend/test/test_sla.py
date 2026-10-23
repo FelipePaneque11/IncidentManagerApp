@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import pytest
-from library.incident_sla import calculate_deadline
+from library.incident_sla import calculate_deadline, is_overdue
 
 
 @pytest.mark.parametrize(
@@ -27,3 +27,28 @@ def test_invalid_priority_is_rejected(priority):
 
     with pytest.raises(ValueError):
         calculate_deadline(created_at=created_at, priority=priority)
+
+#Test to validade overdue incidents
+@pytest.mark.parametrize(
+    "status, minute, expected", 
+    [
+        ("open", 29, False),
+        ("open", 30, True),
+        ("open", 31, True),
+        ("investigating", 31, True),
+        ("resolved", 31, False),
+    ]
+)
+def test_incident_overdue_status(status, minute, expected):
+    #deadline is at 10h30
+    deadline = datetime(2026, 10, 23, 10, 30,tzinfo=timezone.utc)
+
+    now = datetime(2026,10,23,10, minute, tzinfo=timezone.utc)
+
+    result = is_overdue(
+        deadline=deadline,
+        status=status,
+        now=now
+    )
+
+    assert result == expected

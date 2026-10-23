@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 from database.schemas import IncidentCreate
+from datetime import datetime, timedelta
 
 #1
 def test_valid_incident():
@@ -44,6 +45,10 @@ def test_create_incident(client, priority):
     assert incident["priority"] == priority
     assert incident["status"] == "open"
     assert incident["id"]
+
+    #read the timestamp returned as json string
+    created_at = datetime.fromisoformat(incident["created_at"])
+    assert created_at.utcoffset() is not None
 
 #4
 def test_list_incidents(client):
@@ -182,3 +187,27 @@ def test_invalid_priority_is_rejected(client, priority):
 
     assert response.status_code == 422
     assert response.json()["detail"][0]["loc"] == ["body", "priority"]
+
+#13
+#This test is to verify if our deadline changes if we change the incident priority
+#if an incident is critical with deadline of 1h, and we change it to high,
+#its deadline should then be 5h
+def test_incident_response_includes_sla_deadline(client):
+    response = client.post("/incidents", json={
+        "title": "Database backup failed",
+        "description":"the scheduled database backup did not complete."
+    })
+
+    assert response.status_code == 201
+
+    incident = response.json()
+
+    #Omitting priority should select our default "medium"
+    assert incident["priority"] == "medium"
+
+    #convert json timestamp strings into python datetime object
+    created_at = datetime.fromisoformat(incident["created_at"])
+    deadline = datetime.fromisoformat(incident["deadline"])
+
+    #our policde gives medium-priority incidents 24h
+    assert deadline == created_at + timedelta(hours=24)
