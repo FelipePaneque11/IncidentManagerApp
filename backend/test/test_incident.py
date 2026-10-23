@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from schemas import IncidentCreate
+from database.schemas import IncidentCreate
 
 #1
 def test_valid_incident():

@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database import engine
-from models import Incident
+from database.connection import engine
+from database.models import Incident
 
 #obtains a database connection
 with Session(engine) as session:

@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session
 
-#finds the full path of database.py | locates .env in the project root
-env_file = Path(__file__).resolve().parent.parent / ".env"
+# Locate .env in the project root, above backend/database/.
+env_file = Path(__file__).resolve().parents[2] / ".env"
 #loads the settings from env file
 load_dotenv(env_file)
 

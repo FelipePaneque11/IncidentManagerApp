@@ -3,8 +3,8 @@ from logging.config import fileConfig
 from alembic import context
 
 from sqlalchemy import create_engine
-from database import engine
-from models import Base
+from database.connection import engine
+from database.models import Base
 
 migration_options = context.get_x_argument(as_dictionary=True)
 if "database" in migration_options:

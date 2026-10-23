@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from database import database_url, get_db
+from database.connection import database_url, get_db
 from main import app
 
 # Use the same connection settings, but choose the test database.

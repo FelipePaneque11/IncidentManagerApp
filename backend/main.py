@@ -4,9 +4,9 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import Incident
-from schemas import IncidentCreate, IncidentUpdate, IncidentRead
+from database.connection import get_db
+from database.models import Incident
+from database.schemas import IncidentCreate, IncidentUpdate, IncidentRead
 
 app = FastAPI(title = "Incident Manager API")
 
@@ -86,5 +86,3 @@ def delete_incident(
     db.commit()
 
     return Response(status_code=204)
-
-    
