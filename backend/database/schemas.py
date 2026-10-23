@@ -1,7 +1,7 @@
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from library.incident_sla import calculate_deadline
-from datetime import datetime
+from library.incident_sla import calculate_deadline, is_overdue
+from datetime import datetime, timezone
 
 ## Pydantic is used to validade data submitted to the DB.
 class IncidentCreate(BaseModel):
@@ -35,4 +35,17 @@ class IncidentRead(BaseModel):
         return calculate_deadline(
             created_at=self.created_at,
             priority=self.priority
+        )
+
+    @computed_field
+    @property
+    def overdue(self) -> bool:
+        #use a timezone-aware current time when comparing timestamps.
+        now = datetime.now(timezone.utc)
+
+        #let our library decide whether this incident is currently overdue
+        return is_overdue(
+            deadline=self.deadline,
+            status=self.status,
+            now=now
         )

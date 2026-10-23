@@ -49,6 +49,8 @@ def test_create_incident(client, priority):
     #read the timestamp returned as json string
     created_at = datetime.fromisoformat(incident["created_at"])
     assert created_at.utcoffset() is not None
+    #a newly created incident should still be within its deadline
+    assert incident["overdue"] is False
 
 #4
 def test_list_incidents(client):
