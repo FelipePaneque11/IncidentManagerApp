@@ -21,3 +21,15 @@ class Incident(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+
+class User(Base):
+    __tablename__ = "users"
+
+    id:Mapped[str] = mapped_column(String(36), primary_key=True)
+    #PostgreSQL enforces uniqueness, including simultaneons registrations
+    username: Mapped[str] = mapped_column(String(30), unique=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(
+        String(20),
+        server_default="responder"
+    )

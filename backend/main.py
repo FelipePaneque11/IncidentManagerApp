@@ -8,7 +8,10 @@ from database.connection import get_db
 from database.models import Incident
 from database.schemas import IncidentCreate, IncidentUpdate, IncidentRead
 
+from auth.router import router as auth_router
+
 app = FastAPI(title = "Incident Manager API")
+app.include_router(auth_router) # Register the authentication endpoints with our application
 
 
 @app.get("/health")
