@@ -1,7 +1,9 @@
 import pytest
 from pydantic import ValidationError
-from database.schemas import IncidentCreate
+from database.schemas import IncidentCreate, utc_now
+import database.schemas as schemas
 from datetime import datetime, timedelta
+
 
 #1
 def test_valid_incident():
@@ -213,3 +215,29 @@ def test_incident_response_includes_sla_deadline(client):
 
     #our policde gives medium-priority incidents 24h
     assert deadline == created_at + timedelta(hours=24)
+
+#14
+def test_api_marks_incident_overdue(client, monkeypatch):
+    create_response = client.post("/incidents", json={
+        "title": "Payment API unavailable",
+        "description": "Customers cannot complete their payments.",
+        "priority": "high"
+    })
+
+    assert create_response.status_code == 201
+
+    incident = create_response.json()
+    incident_id = incident["id"]
+    deadline = datetime.fromisoformat(incident["deadline"])
+
+    #supply a time one minute after this incident's deadline
+    def fixed_now() -> datetime:
+        return deadline + timedelta(minutes=1)
+
+    #temporarily replace the repsonse code's clock for this test
+    monkeypatch.setattr(schemas, "utc_now", fixed_now)
+
+    response = client.get(f"/incidents/{incident_id}")
+
+    assert response.status_code == 200
+    assert response.json()["overdue"] is True

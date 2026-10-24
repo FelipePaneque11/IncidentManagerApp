@@ -3,6 +3,10 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from library.incident_sla import calculate_deadline, is_overdue
 from datetime import datetime, timezone
 
+def utc_now() -> datetime:
+    #keep clock access in one place so tests can replace it temporarily
+    return datetime.now(timezone.utc)
+
 ## Pydantic is used to validade data submitted to the DB.
 class IncidentCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -41,11 +45,12 @@ class IncidentRead(BaseModel):
     @property
     def overdue(self) -> bool:
         #use a timezone-aware current time when comparing timestamps.
-        now = datetime.now(timezone.utc)
-
+        now = utc_now()
         #let our library decide whether this incident is currently overdue
         return is_overdue(
             deadline=self.deadline,
             status=self.status,
             now=now
         )
+
+
