@@ -1,4 +1,5 @@
 from auth.security import hash_password, verify_password
+import pytest
 
 def test_password_hashing():
     password = "ExamplePassword123!"
@@ -12,7 +13,7 @@ def test_password_hashing():
 def test_register_user(client):
     response = client.post("/auth/register", json={
         "username":"felipe",
-        "password":"ExemplePassword123!"
+        "password":"ExamplePassword123!"
     })
 
     assert response.status_code == 201
@@ -30,7 +31,7 @@ def test_register_user(client):
 def test_duplicate_username_is_rejected(client):
     payload = {
         "username":"felipe",
-        "password":"ExemplePassword123!"
+        "password":"ExamplePassword123!"
     }
 
     first_response = client.post("/auth/register", json=payload)
@@ -38,3 +39,54 @@ def test_duplicate_username_is_rejected(client):
 
     assert first_response.status_code == 201
     assert second_response.status_code == 409
+
+def test_login_logout_flow(client):
+    account = {
+        "username":"session_user",
+        "password":"ExamplePassword123!"
+    }
+
+    #protected account information is unavailable before login
+    assert client.get("/auth/me").status_code == 401
+
+    register_response = client.post("/auth/register", json=account)
+    assert register_response.status_code == 201
+
+    login_response = client.post("auth/login", json=account)
+    assert login_response.status_code == 200
+
+    #TestClient remembers the cookie
+    me_response = client.get("auth/me")
+    assert me_response.status_code == 200
+    assert me_response.json() == login_response.json()
+
+    logout_response = client.post("/auth/logout")
+    assert logout_response.status_code == 204
+
+    #Loggin out removes access to the protected endpoint
+    assert client.get("/auth/me").status_code == 401
+
+@pytest.mark.parametrize(
+    "username, password",
+    [
+        ("session_user", "WrongUsername12!"),
+        ("unknown_user", "ExamplePassword123!")
+    ]
+)
+def test_invalid_login_is_rejected(client,username,password):
+    register_response = client.post("/auth/register", json={
+        "username": "session_user",
+        "password": "ExamplePassword123!"
+    })
+
+    assert register_response.status_code == 201
+
+    response = client.post("/auth/login", json={
+        "username": username,
+        "password": password
+    })
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect username or password"
+    assert client.get("/auth/me").status_code == 401
+

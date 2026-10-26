@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Response
@@ -8,10 +11,28 @@ from database.connection import get_db
 from database.models import Incident
 from database.schemas import IncidentCreate, IncidentUpdate, IncidentRead
 
+from dotenv import load_dotenv
+from starlette.middleware.sessions import SessionMiddleware
+
 from auth.router import router as auth_router
 
+#load configuration from the project root
+env_file = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(env_file)
+
 app = FastAPI(title = "Incident Manager API")
-app.include_router(auth_router) # Register the authentication endpoints with our application
+
+#read and write signed session cookies for incoming requests
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.environ["SESSION_SECRET"],
+    max_age=60*60*8, #remember session for 8hours
+    same_site="lax",
+    https_only=os.getenv("COOKIE_SECURE", "false").lower() == "true"
+)
+
+# Register the authentication endpoints with our application
+app.include_router(auth_router) 
 
 
 @app.get("/health")

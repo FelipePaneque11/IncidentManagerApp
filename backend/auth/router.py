@@ -1,12 +1,16 @@
 #handles authentication-related API requests
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from auth.schemas import UserCreate, UserRead
-from auth.security import hash_password
+from auth.security import hash_password, verify_password
+from auth.dependencies import get_current_user
+from auth.schemas import UserCreate,UserLogin, UserRead
+
 from database.connection import get_db
 from database.models import User
 
@@ -37,5 +41,37 @@ def register_user(account: UserCreate,  db: Session = Depends(get_db)):
     db.refresh(user)
 
     return user
+
+@router.post("/login", response_model=UserRead)
+def login(
+    credentials: UserLogin,
+    request:Request,
+    db:Session = Depends(get_db)
+):
+    #find the account matching the submitted username
+    user = db.scalar(select(User).where(User.username == credentials.username))
+
+    #use the same message for an unkown username of incorrect password
+    #prevent attacks
+    if user is None or not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(status_code=401,detail="Incorrect username or password")
+
+    #start a fresh login session containing only the user's ID
+    request.session.clear()
+    request.session["user_id"]= user.id
+
+    return user
+
+@router.get("/me", response_model=UserRead)
+def read_current_user(user: User = Depends(get_current_user)):
+    #the dependency rejects this request unless the user is loggede in
+    return user
+
+@router.post("/logout",status_code=204)
+def logout(request:Request):
+    #remove the login data from the browser session
+    request.session.clear()
+
+    return Response(status_code=204)
 
     

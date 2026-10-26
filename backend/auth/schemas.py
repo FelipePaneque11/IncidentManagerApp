@@ -24,3 +24,8 @@ class UserRead(BaseModel):
     id: str
     username: str
     role: Literal["responder", "admin"]
+
+class UserLogin(BaseModel):
+    #login checks existing credentials; registration defines password policy
+    username: str = Field(min_length=1, max_length=30)
+    password: str = Field(min_length=1, max_length=128, repr=False)
