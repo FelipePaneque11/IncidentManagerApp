@@ -38,3 +38,21 @@ def client():
             finally:
                 #Rollback: undo the database changes after the test finishes.
                 transaction.rollback()
+
+@pytest.fixture
+def authenticated_client(client):
+    account = {
+        "username":"incident_tester",
+        "password":"TestPassword12!"
+    }
+
+    #create an account incide this test's isolated database transaction
+    register_response = client.post("/auth/register", json=account)
+    assert register_response.status_code == 201, register_response.text
+
+    #the client remembers the session cookie returned by login
+    login_response = client.post("/auth/login", json=account)
+    assert login_response.status_code == 200, login_response.text
+
+    #the existing client fixture already handles cleanup
+    return client

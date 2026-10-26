@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import User
 
+#reads the session, finds the user, and rejects requests without a valid login.
 def get_current_user(request:Request, db:Session = Depends(get_db)) -> User:
     #Session middleware reads and verifies the browser's session cookie
     user_id = request.session.get("user_id")

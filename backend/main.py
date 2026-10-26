@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
 
 from auth.router import router as auth_router
+from auth.dependencies import get_current_user
 
 #load configuration from the project root
 env_file = Path(__file__).resolve().parent.parent / ".env"
@@ -40,7 +41,7 @@ def health_check():
     return {"status":"ok"}
 
 #add an incident
-@app.post("/incidents", status_code=201, response_model=IncidentRead)
+@app.post("/incidents", status_code=201, response_model=IncidentRead, dependencies=[Depends(get_current_user)])
 def get_incidents(
     incident: IncidentCreate,
     db: Session = Depends(get_db)
@@ -60,12 +61,12 @@ def get_incidents(
     return new_incident
 
 #get all incidents
-@app.get("/incidents", response_model=list[IncidentRead])
+@app.get("/incidents", response_model=list[IncidentRead], dependencies=[Depends(get_current_user)])
 def get_incidents(db: Session = Depends(get_db)):
     return db.scalars(select(Incident)).all()
 
 #get incident by ID
-@app.get("/incidents/{incident_id}", response_model=IncidentRead)
+@app.get("/incidents/{incident_id}", response_model=IncidentRead, dependencies=[Depends(get_current_user)])
 def get_incident(
     incident_id: str,
     db: Session = Depends(get_db)
@@ -76,7 +77,7 @@ def get_incident(
     return incident
 
 #Update an incident
-@app.put("/incidents/{incident_id}", response_model=IncidentRead)
+@app.put("/incidents/{incident_id}", response_model=IncidentRead, dependencies=[Depends(get_current_user)])
 def update_incident(
     incident_id:str, 
     update: IncidentUpdate,
@@ -97,7 +98,7 @@ def update_incident(
     return incident
 
 #delete an incident
-@app.delete("/incidents/{incident_id}", status_code=204)
+@app.delete("/incidents/{incident_id}", status_code=204, dependencies=[Depends(get_current_user)])
 def delete_incident(
     incident_id:str,
     db: Session = Depends(get_db)
