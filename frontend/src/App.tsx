@@ -1,16 +1,33 @@
-export default function App() {
-  // Return the interface React should display.
-  return (
-    <main>
-      <h1>Incident Manager</h1>
-      <p>Manage Incidents, assignments, and SLA deadlines.</p>
-      <br></br>
-      <p>The frontend is running.</p>
+import { useState } from 'react'
 
-      {/* Open the backend health endpoint through our development proxy. */}
-      <a href="/api/health" target="_blank" rel="noreferrer">
-        Check backend connection
-      </a>
+import LoginForm from './components/LoginForm'
+import type { User } from './api/auth'
+
+
+export default function App() {
+  // null means this component has not received a logged-in account yet.
+  const [user, setUser] = useState<User | null>(null)
+
+  function handleLogin(loggedInUser: User) {
+    setUser(loggedInUser)
+  }
+
+  if (user !== null) {
+    return (
+      <main className="auth-card">
+        <h1>Welcome, {user.username}</h1>
+        <p>User role: {user.role}</p>
+        <p>You are signed in to Incident Manager.</p>
+      </main>
+    )
+  }
+
+  return (
+    <main className="auth-card">
+      <h1>Incident Manager</h1>
+      <p>Sign in to manage your incidents.</p>
+
+      <LoginForm onLogin={handleLogin} />
     </main>
   )
 }
