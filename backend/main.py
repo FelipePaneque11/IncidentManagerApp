@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Incident
-from database.schemas import IncidentCreate, IncidentUpdate, IncidentRead
+from database.models import Incident, User
+from database.schemas import IncidentCreate, IncidentUpdate, IncidentRead, IncidentAssignemnt
 
 from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
@@ -111,3 +111,26 @@ def delete_incident(
     db.commit()
 
     return Response(status_code=204)
+
+#assign an incident to someone
+@app.patch("/incidents/{incident_id}/assignee", response_model=IncidentRead, dependencies=[Depends(get_current_user)])
+def assign_incident(incident_id:str, assignment: IncidentAssignemnt, db:Session = Depends(get_db)):
+    incident = db.get(Incident, incident_id)
+
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    #check that the selected user exists before assigning it to them
+    if assignment.assignee_id is not None:
+        assignee =  db.get(User, assignment.assignee_id)
+
+        if assignee is None:
+            raise HTTPException(status_code=404, detail="Assignee not found")
+
+    #None clears the assignment. A user ID sets or replaces it
+    incident.assignee_id = assignment.assignee_id
+
+    db.commit()
+    db.refresh(incident)
+
+    return incident

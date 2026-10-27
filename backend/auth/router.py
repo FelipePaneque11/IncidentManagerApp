@@ -74,4 +74,8 @@ def logout(request:Request):
 
     return Response(status_code=204)
 
-    
+#user-list endpoint
+@router.get("/users", response_model=list[UserRead], dependencies=[Depends(get_current_user)])
+def list_users(db: Session = Depends(get_db)):
+    #return safe account fields for the assignment dropdown
+    return db.scalars(select(User).order_by(User.username)).all()

@@ -29,6 +29,8 @@ class IncidentRead(BaseModel):
     priority: Literal["low", "medium", "high", "critical"]
     status: Literal["open", "investigating", "resolved"]
     created_at: datetime
+    # Return the responsible user's ID, or null when nobody is assigned.
+    assignee_id: str | None
 
     #@property lets us access the calculation as incident.deadline.
     #@computed_field tells Pydantic to include that property in its output.
@@ -54,3 +56,5 @@ class IncidentRead(BaseModel):
         )
 
 
+class IncidentAssignemnt(BaseModel):
+    assignee_id: str | None

@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime,String, Text, func
+from sqlalchemy import DateTime,String, Text, func, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from datetime import datetime
 
@@ -15,6 +15,16 @@ class Incident(Base):
     description:Mapped[str] = mapped_column(Text)
     priority:Mapped[str] = mapped_column(String(10))
     status:Mapped[str] = mapped_column(String(20))
+    # An incident can be assigned to a user or remain unassigned.
+    assignee_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey(
+            "users.id",
+            name="fk_incidents_assignee",
+            ondelete="SET NULL" #if a user is deleted in the future, their incidents become unassigned.
+        ),
+        nullable=True
+    )
 
     #keep the incident creation time so we can calculate this incident's deadline
     created_at: Mapped[datetime] = mapped_column(
