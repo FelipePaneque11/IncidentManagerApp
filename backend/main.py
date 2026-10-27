@@ -3,7 +3,9 @@ from pathlib import Path
 
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Response
+from typing import Literal
+
+from fastapi import Depends, FastAPI, HTTPException, Response, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -62,9 +64,35 @@ def get_incidents(
 
 #get all incidents
 @app.get("/incidents", response_model=list[IncidentRead], dependencies=[Depends(get_current_user)])
-def get_incidents(db: Session = Depends(get_db)):
-    return db.scalars(select(Incident)).all()
+def get_incidents(
+    status: Literal["open", "investigating", "resolved"] | None = None,   # |None = None makes each filter optional.
+    priority: Literal["low", "medium", "high", "critical"] | None = None,
+    limit: int = Query(default=20, ge=1, le=100), #le means "less than or equal to".
+    offset: int = Query(default=0, ge=0), #ge means "greater than or equal to".
+    db: Session = Depends(get_db)
+):
+    #start by selecting incidents
+    query = select(Incident)
 
+    #add a condition only when the caller supplies this filter
+    if status is not None:
+        query = query.where(Incident.status == status)
+
+    if priority is not None:
+        query = query.where(Incident.priority == priority)
+
+    #show newest incidents first. ID breaks ties between equal timestamps
+    query = query.order_by(
+        Incident.created_at.desc(),
+        Incident.id
+    )
+
+    #apply pagination after filtering and sorting
+    query = query.offset(offset).limit(limit) #skips ten matches and returns up to the next ten.
+
+    #execute the query and return the incidents
+    return db.scalars(query).all()
+    
 #get incident by ID
 @app.get("/incidents/{incident_id}", response_model=IncidentRead, dependencies=[Depends(get_current_user)])
 def get_incident(
