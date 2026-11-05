@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react"
 
 import CreateIncidentForm from "./CreateIncidentForm"
+import IncidentDetails from "./IncidentDetails"
 import { getIncidents } from "../api/incidents"
 import type { Incident } from "../api/incidents"
 import { getUsers } from "../api/auth"
@@ -15,9 +16,15 @@ export default function IncidentDashboard(){
     const [incidents, setIncidents] = useState<Incident[]>([]) //Start with an empty array of incidents
     const [users, setUsers] = useState<User[]>([])             //Start with an empty array of users
     const [showCreateForm, setShowCreateForm] = useState(false)
+    const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
     const [notice, setNotice] = useState("")
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+
+    //find the selected incident using its ID
+    const selectedIncident = incidents.find(function (incident){
+        return incident.id === selectedIncidentId
+    })
 
     useEffect(function () {
         let active = true
@@ -128,6 +135,8 @@ function formatDate(value: string): string {
 
   function openCreateForm(){
     setNotice('')
+    //close the details panel when opening the creation form
+    setSelectedIncidentId(null)
     setShowCreateForm(true)
   }
 
@@ -146,6 +155,15 @@ function formatDate(value: string): string {
 
     setShowCreateForm(false)
     setNotice("Incident created successfully")
+  }
+
+  function openIncidentDetails(incidentId: string){
+    setNotice('')
+    setSelectedIncidentId(incidentId)
+  }
+
+  function closeIncidentDetails(){
+    setSelectedIncidentId(null)
   }
 
   return (
@@ -167,6 +185,16 @@ function formatDate(value: string): string {
             <CreateIncidentForm
                 onCreated={handleIncidentCreated}
                 onCancel={closeCreateForm}
+            />
+        )}
+
+        {selectedIncident &&(
+            <IncidentDetails
+                incident={selectedIncident}
+                assigneeName={getAssigneeName(selectedIncident.assignee_id)}
+                slaLabel={getSLALabel(selectedIncident)}
+                formatDate={formatDate}
+                onClose={closeIncidentDetails}
             />
         )}
 
@@ -201,7 +229,17 @@ function formatDate(value: string): string {
                     key={incident.id}
                     className={incident.overdue ? 'incident-overdue' : ''}
                   >
-                    <th scope="row">{incident.title}</th>
+                    <th scope="row">
+                    <button
+                        type="button"
+                        className="incident-title-button"
+                        disabled={showCreateForm}
+                        onClick={function () {
+                        openIncidentDetails(incident.id)
+                        }}
+                    >{incident.title}
+                    </button>
+                    </th>
 
                     <td>
                       <span className={'badge priority-' + incident.priority}>
