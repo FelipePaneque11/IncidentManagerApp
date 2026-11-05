@@ -25,5 +25,34 @@ export async function login(username:string, password:string) : Promise<User>{
     }
 
     return response.json()
+}
+
+export async function getCurrentUser(): Promise<User | null>{
+    const response = await fetch('/api/auth/me', {
+        credentials: "include",
+    })
+
+    //being logged out is a normal result, rather than a connection error
+    if(response.status == 401){
+        return null
+    }
+
+    if(!response.ok){
+        throw new Error("Unable to check your login session.")
+    }
+    return response.json()
 
 }
+
+export async function logout(): Promise<void> {
+    const response = await fetch('/api/auth/logout', {
+        method: "POST",
+        credentials: "include",
+    })
+
+    if(!response.ok){
+        throw new Error("unable to log out. Please try again.")
+    }
+    //backeend returns 204 with no body.
+}
+
