@@ -41,7 +41,23 @@ export async function getCurrentUser(): Promise<User | null>{
         throw new Error("Unable to check your login session.")
     }
     return response.json()
+}
 
+//An incident contains an assignee_id. Fetching the users lets us display the matching username.
+export async function getUsers(): Promise<User[]>{
+    const response = await fetch("/api/auth/users", {
+        credentials: 'include'
+    })
+
+    if(response.status == 401){
+        throw new Error("Your session has expired. Refresh the page to sign in again.")
+    }
+
+    if(!response.ok){
+        throw new Error("Unable to retrieve assignee name")
+    }
+
+    return response.json()
 }
 
 export async function logout(): Promise<void> {

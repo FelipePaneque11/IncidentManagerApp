@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { getCurrentUser, logout } from './api/auth'
 import type { User } from './api/auth'
 import LoginForm from './components/LoginForm'
+import IncidentDashboard from './components/IncidentDashboard'
 
 export default function App() {
   // null means this component has not received a logged-in account yet.
@@ -96,15 +97,27 @@ export default function App() {
 
   if (user !== null) {
     return (
-      <main className="auth-card">
-        <h1>Welcome, {user.username}</h1>
-        <p>User role: {user.role}</p>
+      <main className="dashboard-shell">
+        <header className='dashboard-header'>
+
+          <div>
+            <h1>Incident Manager</h1>
+            <p>Signed in as {user.username} . {user.role}</p>
+          </div>
+
+          <button 
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}>
+            {isLoggingOut ? "Logging out..." : "Log out"}    
+          </button>
+        </header>
 
         {error && (
           <p className="error" role="alert">{error}</p>
         )}
-
-        <button type='button' onClick={handleLogout} disabled={isLoggingOut}>Log Out</button>
+        
+        <IncidentDashboard />
       </main>
     )
   }
@@ -113,7 +126,7 @@ export default function App() {
     <main className="auth-card">
       <h1>Incident Manager</h1>
       <p>Sign in to manage your incidents.</p>
-
+    
       <LoginForm onLogin={handleLogin} />
     </main>
   )
