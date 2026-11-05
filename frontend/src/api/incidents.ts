@@ -64,3 +64,40 @@ export async function createIncident(payload: NewIncident): Promise<Incident>{
     return response.json()
 }
 
+//Editing an incident
+export type IncidentUpdate = {
+    title: string
+    description: string
+    priority: Incident["priority"]
+    status: Incident["status"]
+}
+
+export async function updateIncident(incidentId: string, payload:IncidentUpdate): Promise<Incident>{
+    const response = await fetch('/api/incidents/' + incidentId, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload)
+    })
+    
+    if (response.status === 401) {
+        throw new Error('Your session has expired. Refresh to sign in again.')
+    }
+
+    if (response.status === 404) {
+        throw new Error('This incident no longer exists. Refresh the dashboard.')
+    }
+
+    if (response.status === 422) {
+        throw new Error('Please check the incident details and try again.')
+    }
+
+    if (!response.ok) {
+        throw new Error('Unable to update the incident. Please try again.')
+    }
+
+    return response.json()
+}
+

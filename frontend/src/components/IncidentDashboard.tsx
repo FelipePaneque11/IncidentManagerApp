@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 
 import CreateIncidentForm from "./CreateIncidentForm"
 import IncidentDetails from "./IncidentDetails"
+import EditIncidentForm from "./EditIncidentForm"
 import { getIncidents } from "../api/incidents"
 import type { Incident } from "../api/incidents"
 import { getUsers } from "../api/auth"
@@ -17,6 +18,7 @@ export default function IncidentDashboard(){
     const [users, setUsers] = useState<User[]>([])             //Start with an empty array of users
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
+    const [isEditing, setIsEditing] = useState(false)
     const [notice, setNotice] = useState("")
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -166,14 +168,38 @@ function formatDate(value: string): string {
     setSelectedIncidentId(null)
   }
 
+  //Edit handlers
+  function startEditing(){
+    setNotice("")
+    setIsEditing(true)
+  }
+
+  function cancelEditing(){
+    setIsEditing(false)
+  }
+
+  function handleIncidentUpdated(updatedIncident: Incident){
+    setIncidents(function (currentIncidents){
+        //build a new list, replacing only the incident we saved
+        return currentIncidents.map(function (incident){
+            if(incident.id === updatedIncident.id){
+                return updatedIncident
+            }
+            return incident
+        })
+    })
+    setIsEditing(false)
+    setNotice('Incident "' + updatedIncident.title + '" updated successfully.')
+  }
+
   return (
     <section className="panel">
       <div className="panel-heading">
         <h2>Latest incidents</h2>
         
         <div className="button-row">
-            <button type="button" onClick={openCreateForm} disabled={showCreateForm}>New Incident</button>
-            <button type="button" onClick={reloadDashboard} disabled={showCreateForm}>Refresh</button>
+            <button type="button" onClick={openCreateForm} disabled={showCreateForm || isEditing}>New Incident</button>
+            <button type="button" onClick={reloadDashboard} disabled={showCreateForm || isEditing}>Refresh</button>
         </div>  
       </div>
 
@@ -188,13 +214,23 @@ function formatDate(value: string): string {
             />
         )}
 
-        {selectedIncident &&(
+        {selectedIncident && !isEditing &&(
             <IncidentDetails
                 incident={selectedIncident}
                 assigneeName={getAssigneeName(selectedIncident.assignee_id)}
                 slaLabel={getSLALabel(selectedIncident)}
                 formatDate={formatDate}
                 onClose={closeIncidentDetails}
+                onEdit={startEditing}
+            />
+        )}
+
+        {selectedIncident && isEditing && (
+            <EditIncidentForm
+                key={selectedIncident.id}
+                incident={selectedIncident}
+                onUpdate={handleIncidentUpdated}
+                onCancel={cancelEditing}
             />
         )}
 

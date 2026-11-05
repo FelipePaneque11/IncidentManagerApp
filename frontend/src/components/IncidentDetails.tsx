@@ -6,6 +6,7 @@ type IncidentDetailsProps = {
     slaLabel: string
     formatDate(value: string): string
     onClose(): void
+    onEdit(): void
 }
 
 export default function IncidentDetails(props: IncidentDetailsProps){
@@ -16,11 +17,10 @@ export default function IncidentDetails(props: IncidentDetailsProps){
         <section className="incident-details" aria-labelledby="incident-details-heading">
             <div className="incident-details-heading">
                 <h3 id="incident-details-heading">Incident details</h3>
-                <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={props.onClose}
-                >Close</button>
+                <div className="button-row">
+                    <button type="button" onClick={props.onEdit}>Edit Incident</button>
+                    <button type="button"className="secondary-button" onClick={props.onClose}>Close</button>
+                </div>
             </div>
 
             <h4>{incident.title}</h4>
