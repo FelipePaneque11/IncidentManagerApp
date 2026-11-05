@@ -30,6 +30,11 @@ export default function IncidentDetails(props: IncidentDetailsProps){
             <dl className="incident-details-grid">
 
                 <div>
+                    <dt>Incident ID</dt>
+                    <dd>{props.incident.id}</dd>
+                </div>
+
+                <div>
                     {/* description term */}
                     <dt>Priority</dt>
                     {/* description */}
