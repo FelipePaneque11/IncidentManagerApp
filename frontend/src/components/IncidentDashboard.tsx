@@ -14,6 +14,8 @@ import type { Incident } from "../api/incidents"
 import { getUsers } from "../api/auth"
 import type { User } from "../api/auth"
 
+const PAGE_SIZE = 20
+
 export default function IncidentDashboard(){
     const [incidents, setIncidents] = useState<Incident[]>([]) //Start with an empty array of incidents
     const [users, setUsers] = useState<User[]>([])             //Start with an empty array of users
@@ -26,7 +28,14 @@ export default function IncidentDashboard(){
     const [notice, setNotice] = useState("")
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+    const [statusFilter, setStatusFilter] = useState('')
+    const [priorityFilter, setPriorityFilter] = useState('')
+    const [offset, setOffset] = useState(0) //counts how many matching records to skip.
+    const [hasNextPage, setHasNextPage] = useState(false)
+    const [reloadCount, setReloadCount] = useState(0)
 
+    const controlsDisabled = loading || showCreateForm || isEditing || isDeleting || isAssigning
+    
     //find the selected incident using its ID
     const selectedIncident = incidents.find(function (incident){
         return incident.id === selectedIncidentId
@@ -34,18 +43,37 @@ export default function IncidentDashboard(){
 
     useEffect(function () {
         let active = true
+
         //load the dashboard with the incidents and users. 
         async function loadDashboard(){
             try{
-                const [loadedIncident, loadedUsers] = await Promise.all([
-                    getIncidents(),
+                const [incidentResults, userResults] = await Promise.all([
+                    getIncidents({
+                      status: statusFilter,
+                      priority: priorityFilter,
+                      limit: PAGE_SIZE + 1,
+                      offset: offset,
+                    }),
                     getUsers(),
                 ])
-
-                if(active){
-                    setIncidents(loadedIncident)
-                    setUsers(loadedUsers)
+                //ignore results from an old request
+                if(!active){
+                    return
                 }
+                //a deletion or edit might leave the current page empty
+                //move back one page and let the effect fetch again.
+                if(incidentResults.length === 0 && offset > 0){
+                  setOffset(Math.max(0, offset - PAGE_SIZE))
+                  return
+                }
+
+                setHasNextPage(incidentResults.length > PAGE_SIZE)
+
+                //the extra record is only used to check for another page
+                setIncidents(incidentResults.slice(0, PAGE_SIZE))
+                setUsers(userResults)
+                setError('')
+                setLoading(false)
             }catch(cause){
                 if(active){
                     if(cause instanceof Error){
@@ -53,9 +81,6 @@ export default function IncidentDashboard(){
                     }else{
                         setError("Unable to load the dashboard")
                     }
-                }
-            }finally{
-                if(active){
                     setLoading(false)
                 }
             }
@@ -67,7 +92,7 @@ export default function IncidentDashboard(){
         return function(){
             active = false
         }
-    }, [])
+    }, [statusFilter, priorityFilter, offset, reloadCount])
 
     function getAssigneeName(assigneeId: string | null): string {
     if (assigneeId === null) {
@@ -84,7 +109,7 @@ export default function IncidentDashboard(){
   }
 
 //format date to DD-MM-YYYY and HH-MM
-function formatDate(value: string): string {
+  function formatDate(value: string): string {
     const date = new Date(value)
 
     // padStart ensures single-digit values have a leading zero.
@@ -98,7 +123,7 @@ function formatDate(value: string): string {
     const minutes = String(date.getMinutes()).padStart(2, '0')
 
     return `${day}/${month}/${year} ${hours}:${minutes}`
-}
+  }
   //gets deadline status
   function getSLALabel(incident: Incident): string {
     if (incident.status === 'resolved') {
@@ -113,8 +138,15 @@ function formatDate(value: string): string {
   }
 
   function reloadDashboard() {
-    // App will restore the session and load the dashboard again.
-    window.location.reload()
+    setLoading(true)
+    setError('')
+    setDeleteError('')
+    setSelectedIncidentId(null)
+
+    // Changing this value tells our effect to fetch again.
+    setReloadCount(function (currentCount) {
+      return currentCount + 1
+    })
   }
 
   if (loading) {
@@ -139,6 +171,34 @@ function formatDate(value: string): string {
     )
   }
 
+  function changeStatusFilter(value: string) {
+  setStatusFilter(value)
+  setOffset(0)
+  setNotice('')
+  reloadDashboard()
+}
+
+function changePriorityFilter(value: string) {
+  setPriorityFilter(value)
+  setOffset(0)
+  setNotice('')
+  reloadDashboard()
+}
+
+function resetFilters() {
+  setStatusFilter('')
+  setPriorityFilter('')
+  setOffset(0)
+  setNotice('')
+  reloadDashboard()
+}
+
+function goToPage(newOffset: number) {
+  setOffset(newOffset)
+  setNotice('')
+  reloadDashboard()
+}
+
   function openCreateForm(){
     setNotice('')
     //close the details panel when opening the creation form
@@ -152,17 +212,15 @@ function formatDate(value: string): string {
     setDeleteError("")
   }
 
-  function handleIncidentCreated(createdIncident: Incident){
-    setIncidents(function (currentIncidents){
-        //make a new array with the saved incident at the beginning
-        const updatedIncidents = [createdIncident, ...currentIncidents]
-
-        //keep this initial dashboard page limited to 20 records
-        return updatedIncidents.slice(0, 20)
-    })
-
+  function handleIncidentCreated(createdIncident: Incident) {
+    // Return to the unfiltered first page to show the new incident.
+    setStatusFilter('')
+    setPriorityFilter('')
+    setOffset(0)
     setShowCreateForm(false)
-    setNotice("Incident created successfully")
+
+    setNotice('Incident "' + createdIncident.title + '" created successfully.')
+    reloadDashboard()
   }
 
   function openIncidentDetails(incidentId: string){
@@ -187,18 +245,12 @@ function formatDate(value: string): string {
   }
 
   //INCIDENT UPDATE HANDLER
-  function handleIncidentUpdated(updatedIncident: Incident){
-    setIncidents(function (currentIncidents){
-        //build a new list, replacing only the incident we saved
-        return currentIncidents.map(function (incident){
-            if(incident.id === updatedIncident.id){
-                return updatedIncident
-            }
-            return incident
-        })
-    })
+  function handleIncidentUpdated(updatedIncident: Incident) {
     setIsEditing(false)
     setNotice('Incident "' + updatedIncident.title + '" updated successfully.')
+
+    // Its new status or priority might no longer match the filters.
+    reloadDashboard()
   }
 
 //INCIDENT DELETION HANDLER
@@ -223,13 +275,7 @@ async function handleDeleteIncident(){
   try{
     await deleteIncident(incidentToDelete.id)
 
-    //remove it from the screen only after the backend succeeds
-    setIncidents(function (currentIncidents) {
-      return currentIncidents.filter(function (incident){
-        return incident.id !== incidentToDelete.id
-      })
-    })
-    setSelectedIncidentId(null)
+    reloadDashboard()
     setNotice('Incident "' + incidentToDelete.title + '" deleted successfully.')
   }catch(cause){
     if(cause instanceof Error){
@@ -259,11 +305,48 @@ function handleIncidentAssigned(updatedIncident: Incident){
   return (
     <section className="panel">
       <div className="panel-heading">
+        <div className="incident-filters">
+          <label>
+            Status
+            <select
+              value={statusFilter}
+              onChange={function (event){changeStatusFilter(event.target.value)}}
+              disabled={controlsDisabled}>
+              <option value="">All statuses</option>
+              <option value="open">Open</option>
+              <option value="investigating">Investigating</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </label>
+
+          <label>
+            Priority
+            <select
+              value={priorityFilter}
+              onChange={function (event){changePriorityFilter(event.target.value)}}
+              disabled={controlsDisabled}>
+              <option value="">All priorities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={resetFilters}
+            disabled={controlsDisabled}>
+              Reset filters
+          </button>
+        </div>
+
         <h2>Latest incidents</h2>
         
         <div className="button-row">
-            <button type="button" onClick={openCreateForm} disabled={showCreateForm || isEditing || isDeleting}>New Incident</button>
-            <button type="button" onClick={reloadDashboard} disabled={showCreateForm || isEditing || isDeleting}>Refresh</button>
+            <button type="button" onClick={openCreateForm} disabled={showCreateForm || isEditing || isDeleting || controlsDisabled}>New Incident</button>
+            <button type="button" onClick={reloadDashboard} disabled={showCreateForm || isEditing || isDeleting || controlsDisabled}>Refresh</button>
         </div>  
       </div>
 
@@ -318,12 +401,12 @@ function handleIncidentAssigned(updatedIncident: Incident){
         )}
 
       <p className="muted">
-        Showing up to 20 most recent incidents. Times use your local timezone.
+         Incidents on this page: {incidents.length}. Times use your local timezone.
       </p>
 
       {incidents.length === 0 ? (
         <p className="empty-state">
-          No incidents yet. Your reported incidents will appear here.
+          No incidents found. Create an incident or try different filters.
         </p>
       ) : (
         <div className="table-scroll">
@@ -352,7 +435,7 @@ function handleIncidentAssigned(updatedIncident: Incident){
                     <button
                         type="button"
                         className="incident-title-button"
-                        disabled={showCreateForm || isEditing || isDeleting || isAssigning}
+                        disabled={showCreateForm || isEditing || isDeleting || isAssigning || controlsDisabled}
                         onClick={function () {
                         openIncidentDetails(incident.id)
                         }}
@@ -378,6 +461,26 @@ function handleIncidentAssigned(updatedIncident: Incident){
           </table>
         </div>
       )}
+
+      <nav className="pagination" aria-label="Incident pages">
+        <button
+          type="button"
+          className="secondary-button"
+          disabled={controlsDisabled || offset === 0}
+          onClick={function (){goToPage(Math.max(0, offset - PAGE_SIZE))}}>
+          Previous
+        </button>
+
+        <span>Page {offset / PAGE_SIZE + 1}</span>
+
+        <button
+          type="button"
+          className="secondary-button"
+          disabled={controlsDisabled || !hasNextPage}
+          onClick={function (){ goToPage(offset + PAGE_SIZE)}}>
+          Next
+        </button>
+      </nav>
     </section>
   )
 

@@ -267,3 +267,24 @@ textarea {
 .danger-button:hover:not(:disabled) {
   background: #991b1b;
 }
+
+.incident-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+.incident-filters label {
+  min-width: 160px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}

@@ -11,11 +11,36 @@ export type Incident = {
     overdue: boolean
 }
 
+//pagination - the "?" makes each option optional.
+export type IncidentListOpstions = {
+    status?: string
+    priority?: string
+    limit?: number
+    offset?: number
+}
+
 //GET
-export async function getIncidents(): Promise<Incident[]> {
+export async function getIncidents(options: IncidentListOpstions = {}): Promise<Incident[]> {
     //It requests the first page of up to 20 incidents.
-    const response = await fetch('/api/incidents?limit=20&offset=0', {
-    credentials: 'include',
+    //build the query string using the supplied options
+    const params = new URLSearchParams({
+        limit: String(options.limit ?? 20),
+        offset: String(options.offset ?? 0),
+    })
+
+    //An example request will look like:
+    //api/incidents?limit=21&offset=20&status=open&priority=high
+
+    //empty filters mean "show all"
+    if(options.status){
+        params.set("status", options.status)
+    }
+    if(options.priority){
+        params.set("priority", options.priority)
+    }
+    
+    const response = await fetch('/api/incidents?' + params.toString(), {
+        credentials: "include"
     })
 
     if (response.status === 401) {
