@@ -7,6 +7,8 @@ type IncidentDetailsProps = {
     formatDate(value: string): string
     onClose(): void
     onEdit(): void
+    onDelete(): void
+    isDeleting: boolean
 }
 
 export default function IncidentDetails(props: IncidentDetailsProps){
@@ -18,8 +20,11 @@ export default function IncidentDetails(props: IncidentDetailsProps){
             <div className="incident-details-heading">
                 <h3 id="incident-details-heading">Incident details</h3>
                 <div className="button-row">
-                    <button type="button" onClick={props.onEdit}>Edit Incident</button>
-                    <button type="button"className="secondary-button" onClick={props.onClose}>Close</button>
+                    <button type="button" onClick={props.onEdit} disabled={props.isDeleting}>Edit Incident</button>
+                    <button type="button" onClick={props.onDelete} disabled={props.isDeleting} className="danger-button">
+                        {props.isDeleting ? "Deleting" : "Delete incident"}
+                    </button>
+                    <button type="button"className="secondary-button" onClick={props.onClose} disabled={props.isDeleting}>Close</button>
                 </div>
             </div>
 

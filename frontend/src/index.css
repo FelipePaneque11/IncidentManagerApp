@@ -258,3 +258,12 @@ textarea {
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+.danger-button {
+  background: #b91c1c;
+  color: white;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #991b1b;
+}

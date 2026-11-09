@@ -8,7 +8,7 @@ import { useEffect, useState } from "react"
 import CreateIncidentForm from "./CreateIncidentForm"
 import IncidentDetails from "./IncidentDetails"
 import EditIncidentForm from "./EditIncidentForm"
-import { getIncidents } from "../api/incidents"
+import { getIncidents, deleteIncident } from "../api/incidents"
 import type { Incident } from "../api/incidents"
 import { getUsers } from "../api/auth"
 import type { User } from "../api/auth"
@@ -18,6 +18,8 @@ export default function IncidentDashboard(){
     const [users, setUsers] = useState<User[]>([])             //Start with an empty array of users
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false) //isDeleting prevents other actions dureing the request
+    const [deleteError, setDeleteError] = useState('') //deleteError lets us show a deletion error while keeping the dashboard visible
     const [isEditing, setIsEditing] = useState(false)
     const [notice, setNotice] = useState("")
     const [loading, setLoading] = useState(true)
@@ -30,7 +32,7 @@ export default function IncidentDashboard(){
 
     useEffect(function () {
         let active = true
-
+        //load the dashboard with the incidents and users. 
         async function loadDashboard(){
             try{
                 const [loadedIncident, loadedUsers] = await Promise.all([
@@ -95,7 +97,7 @@ function formatDate(value: string): string {
 
     return `${day}/${month}/${year} ${hours}:${minutes}`
 }
-
+  //gets deadline status
   function getSLALabel(incident: Incident): string {
     if (incident.status === 'resolved') {
       return 'Resolved'
@@ -140,10 +142,12 @@ function formatDate(value: string): string {
     //close the details panel when opening the creation form
     setSelectedIncidentId(null)
     setShowCreateForm(true)
+    setDeleteError("")
   }
 
   function closeCreateForm(){
     setShowCreateForm(false)
+    setDeleteError("")
   }
 
   function handleIncidentCreated(createdIncident: Incident){
@@ -162,10 +166,12 @@ function formatDate(value: string): string {
   function openIncidentDetails(incidentId: string){
     setNotice('')
     setSelectedIncidentId(incidentId)
+    setDeleteError("")
   }
 
   function closeIncidentDetails(){
     setSelectedIncidentId(null)
+    setDeleteError("")
   }
 
   //Edit handlers
@@ -178,6 +184,7 @@ function formatDate(value: string): string {
     setIsEditing(false)
   }
 
+  //INCIDENT UPDATE HANDLER
   function handleIncidentUpdated(updatedIncident: Incident){
     setIncidents(function (currentIncidents){
         //build a new list, replacing only the incident we saved
@@ -192,14 +199,55 @@ function formatDate(value: string): string {
     setNotice('Incident "' + updatedIncident.title + '" updated successfully.')
   }
 
+//INCIDENT DELETION HANDLER
+async function handleDeleteIncident(){
+  //stop if nothing is selected or a deletion is already running
+  if(!selectedIncident || isDeleting){
+    return
+  }
+  //keep a reference to the incident this request concerns
+  const incidentToDelete = selectedIncident
+  const confirmed = window.confirm('Delete"' + incidentToDelete.title + '"? This cannot be undone!')
+
+  //cancel means no API request is sent
+  if(!confirmed){
+    return
+  }
+
+  setDeleteError('')
+  setNotice('')
+  setIsDeleting(true)
+
+  try{
+    await deleteIncident(incidentToDelete.id)
+
+    //remove it from the screen only after the backend succeeds
+    setIncidents(function (currentIncidents) {
+      return currentIncidents.filter(function (incident){
+        return incident.id !== incidentToDelete.id
+      })
+    })
+    setSelectedIncidentId(null)
+    setNotice('Incident "' + incidentToDelete.title + '" deleted successfully.')
+  }catch(cause){
+    if(cause instanceof Error){
+      setDeleteError(cause.message)
+    }else{
+      setDeleteError("Something went wrong while deleting.")
+    }
+  }finally{
+    setIsDeleting(false)
+  }
+}
+
   return (
     <section className="panel">
       <div className="panel-heading">
         <h2>Latest incidents</h2>
         
         <div className="button-row">
-            <button type="button" onClick={openCreateForm} disabled={showCreateForm || isEditing}>New Incident</button>
-            <button type="button" onClick={reloadDashboard} disabled={showCreateForm || isEditing}>Refresh</button>
+            <button type="button" onClick={openCreateForm} disabled={showCreateForm || isEditing || isDeleting}>New Incident</button>
+            <button type="button" onClick={reloadDashboard} disabled={showCreateForm || isEditing || isDeleting}>Refresh</button>
         </div>  
       </div>
 
@@ -222,7 +270,13 @@ function formatDate(value: string): string {
                 formatDate={formatDate}
                 onClose={closeIncidentDetails}
                 onEdit={startEditing}
+                onDelete={handleDeleteIncident}
+                isDeleting={isDeleting}
             />
+        )}
+
+        {selectedIncident && !isEditing && deleteError && (
+          <p className="error" role="alert">{deleteError}</p>
         )}
 
         {selectedIncident && isEditing && (
@@ -269,7 +323,7 @@ function formatDate(value: string): string {
                     <button
                         type="button"
                         className="incident-title-button"
-                        disabled={showCreateForm}
+                        disabled={showCreateForm || isEditing || isDeleting}
                         onClick={function () {
                         openIncidentDetails(incident.id)
                         }}

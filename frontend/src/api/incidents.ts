@@ -11,6 +11,7 @@ export type Incident = {
     overdue: boolean
 }
 
+//GET
 export async function getIncidents(): Promise<Incident[]> {
     //It requests the first page of up to 20 incidents.
     const response = await fetch('/api/incidents?limit=20&offset=0', {
@@ -34,6 +35,7 @@ export type NewIncident = {
     priority: Incident['priority']
 }
 
+//POST
 export async function createIncident(payload: NewIncident): Promise<Incident>{
     const response = await fetch('/api/incidents', {
         method: "POST",
@@ -72,6 +74,7 @@ export type IncidentUpdate = {
     status: Incident["status"]
 }
 
+//PUT
 export async function updateIncident(incidentId: string, payload:IncidentUpdate): Promise<Incident>{
     const response = await fetch('/api/incidents/' + incidentId, {
         method: "PUT",
@@ -101,3 +104,24 @@ export async function updateIncident(incidentId: string, payload:IncidentUpdate)
     return response.json()
 }
 
+//DELETE
+export async function deleteIncident(incidentId: string): Promise<void> {
+    const response = await fetch('/api/incidents/' + incidentId, {
+        method: 'DELETE',
+        credentials: 'include',
+    })
+
+    if(response.status === 401){
+        throw new Error("Your session has expired. Refresh to sign in again.")
+    }
+
+    if(response.status === 404){
+        throw new Error("This incident no longer exists. Refresh the dashboard.")
+    }
+
+    if(!response.ok){
+        throw new Error("Unable to delete the incident. Please try again!")
+    }
+
+    //backend returns 204 if deleted. nothing to return.
+}
