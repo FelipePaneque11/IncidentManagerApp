@@ -125,3 +125,32 @@ export async function deleteIncident(incidentId: string): Promise<void> {
 
     //backend returns 204 if deleted. nothing to return.
 }
+
+//PATCH
+//assigning incident to someone
+export async function assignIncident(incidentId: string, assigneId: string | null): Promise<Incident>{
+    const response = await fetch('/api/incidents/' + incidentId + '/assignee', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            assignee_id: assigneId,
+        }),
+    })
+
+    if(response.status === 401){
+        throw new Error("Your session has expired. Refresh to sign in again.")
+    }
+
+    if(response.status === 404){
+        throw new Error("This incident no longer exists. Refresh the dashboard.")
+    }
+
+    if(!response.ok){
+        throw new Error("Unable to save the assignee. Please try again!")
+    }
+
+    return response.json()
+}

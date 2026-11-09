@@ -8,7 +8,8 @@ import { useEffect, useState } from "react"
 import CreateIncidentForm from "./CreateIncidentForm"
 import IncidentDetails from "./IncidentDetails"
 import EditIncidentForm from "./EditIncidentForm"
-import { getIncidents, deleteIncident } from "../api/incidents"
+import IncidentAssignmentForm from "./IncidentAssignmentForm"
+import { getIncidents, deleteIncident, updateIncident } from "../api/incidents"
 import type { Incident } from "../api/incidents"
 import { getUsers } from "../api/auth"
 import type { User } from "../api/auth"
@@ -21,6 +22,7 @@ export default function IncidentDashboard(){
     const [isDeleting, setIsDeleting] = useState(false) //isDeleting prevents other actions dureing the request
     const [deleteError, setDeleteError] = useState('') //deleteError lets us show a deletion error while keeping the dashboard visible
     const [isEditing, setIsEditing] = useState(false)
+    const [isAssigning, setIsAssigning] = useState(false)
     const [notice, setNotice] = useState("")
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -202,7 +204,7 @@ function formatDate(value: string): string {
 //INCIDENT DELETION HANDLER
 async function handleDeleteIncident(){
   //stop if nothing is selected or a deletion is already running
-  if(!selectedIncident || isDeleting){
+  if(!selectedIncident || isDeleting || isAssigning){
     return
   }
   //keep a reference to the incident this request concerns
@@ -240,6 +242,20 @@ async function handleDeleteIncident(){
   }
 }
 
+//AssigneeHandler
+function handleIncidentAssigned(updatedIncident: Incident){
+  //replace the matching incident with the version returned by FastAPI
+  setIncidents(function (currentIncidents){
+    return currentIncidents.map(function (incident){
+      if(incident.id === updatedIncident.id){
+        return updatedIncident
+      }
+      return incident
+    })
+  })
+  setNotice("Incident assignee updateed successfully.")
+}
+
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -272,7 +288,20 @@ async function handleDeleteIncident(){
                 onEdit={startEditing}
                 onDelete={handleDeleteIncident}
                 isDeleting={isDeleting}
+                isAssigning={isAssigning}
             />
+        )}
+
+        {selectedIncident && !isEditing && (
+          <IncidentAssignmentForm
+            key= {selectedIncident.id}
+            incident={selectedIncident}
+            users={users}
+            isSaving={isAssigning}
+            disabled={isDeleting}
+            onSavingChange={setIsAssigning}
+            onAssigned={handleIncidentAssigned}
+          />
         )}
 
         {selectedIncident && !isEditing && deleteError && (
@@ -323,7 +352,7 @@ async function handleDeleteIncident(){
                     <button
                         type="button"
                         className="incident-title-button"
-                        disabled={showCreateForm || isEditing || isDeleting}
+                        disabled={showCreateForm || isEditing || isDeleting || isAssigning}
                         onClick={function () {
                         openIncidentDetails(incident.id)
                         }}

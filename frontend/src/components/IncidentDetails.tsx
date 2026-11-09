@@ -9,6 +9,7 @@ type IncidentDetailsProps = {
     onEdit(): void
     onDelete(): void
     isDeleting: boolean
+    isAssigning: boolean
 }
 
 export default function IncidentDetails(props: IncidentDetailsProps){
@@ -20,11 +21,11 @@ export default function IncidentDetails(props: IncidentDetailsProps){
             <div className="incident-details-heading">
                 <h3 id="incident-details-heading">Incident details</h3>
                 <div className="button-row">
-                    <button type="button" onClick={props.onEdit} disabled={props.isDeleting}>Edit Incident</button>
-                    <button type="button" onClick={props.onDelete} disabled={props.isDeleting} className="danger-button">
+                    <button type="button" onClick={props.onEdit} disabled={props.isDeleting || props.isAssigning}>Edit Incident</button>
+                    <button type="button" onClick={props.onDelete} disabled={props.isDeleting || props.isAssigning} className="danger-button">
                         {props.isDeleting ? "Deleting" : "Delete incident"}
                     </button>
-                    <button type="button"className="secondary-button" onClick={props.onClose} disabled={props.isDeleting}>Close</button>
+                    <button type="button"className="secondary-button" onClick={props.onClose} disabled={props.isDeleting || props.isAssigning}>Close</button>
                 </div>
             </div>
 
