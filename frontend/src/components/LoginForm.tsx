@@ -7,6 +7,7 @@ import type { User } from '../api/auth' //account type
 type LoginFormProps = {
     //App supplies the function to call after successful login
     onLogin(user: User): void
+    onRegister(): void
 }
 
 export default function Loginform(props: LoginFormProps){
@@ -81,6 +82,15 @@ export default function Loginform(props: LoginFormProps){
 
             <button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Signing in...' : "Log in"}
+            </button>
+
+            <button
+                type="button"
+                className="secondary-button"
+                onClick={props.onRegister}
+                disabled={isSubmitting}
+            >
+                Create Account
             </button>
         </form>
     )

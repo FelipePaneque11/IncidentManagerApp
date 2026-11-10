@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { getCurrentUser, logout } from './api/auth'
 import type { User } from './api/auth'
 import LoginForm from './components/LoginForm'
+import RegisterForm from './components/RegisterForm'
 import IncidentDashboard from './components/IncidentDashboard'
 
 export default function App() {
@@ -10,6 +11,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [checkingSession, setCheckingSession] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showRegistration, setShowRegistration] = useState(false)
+  const [authNotice, setAuthNotice] = useState("")
   const [error, setError] = useState("")
 
   useEffect(function () {
@@ -46,6 +49,8 @@ export default function App() {
 
   function handleLogin(loggedInUser: User) {
     setError("")
+    setAuthNotice("")
+    setShowRegistration(false)
     setUser(loggedInUser)
   }
 
@@ -67,6 +72,21 @@ export default function App() {
     }finally{
       setIsLoggingOut(false)
     }
+  }
+
+  function openRegistration(){
+    setError("")
+    setAuthNotice("")
+    setShowRegistration(true)
+  }
+
+  function closeRegistration(){
+    setShowRegistration(false)
+  }
+
+  function handleRegistration(username: string){
+    setShowRegistration(false)
+    setAuthNotice('Account "' + username + '" created. You can now log in.')
   }
 
   function retrySession(){
@@ -125,9 +145,23 @@ export default function App() {
   return (
     <main className="auth-card">
       <h1>Incident Manager</h1>
-      <p>Sign in to manage your incidents.</p>
-    
-      <LoginForm onLogin={handleLogin} />
+      {authNotice && (
+        <p className='success-message' role="status">{authNotice}</p>
+      )}
+
+      {/* show registration form when true, otherwise show login form */}
+      {showRegistration ? (
+        <RegisterForm
+          onRegistered={handleRegistration}
+          onCancel={closeRegistration}
+        />
+      ): (
+        <LoginForm
+          onLogin={handleLogin}
+          onRegister={openRegistration}
+        />
+      )}
+
     </main>
   )
 }

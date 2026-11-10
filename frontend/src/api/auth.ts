@@ -72,3 +72,29 @@ export async function logout(): Promise<void> {
     //backeend returns 204 with no body.
 }
 
+//Registration- LOGIN
+export async function registerUser(username:string, password:string): Promise<User>{
+    const response = await fetch('/api/auth/register', {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({username: username, password:password,}),
+    })
+
+    if (response.status === 409) {
+        throw new Error("That username is already taken. Choose another one.")
+    }
+    
+    if (response.status === 422) {
+        throw new Error("Please check the username and password requirements.")
+    }
+
+    if (!response.ok) {
+        throw new Error("Unable to create your account. Please try again.")
+    }
+
+    return response.json()
+
+}
