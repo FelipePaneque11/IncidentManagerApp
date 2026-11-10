@@ -14,6 +14,8 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
+  /* Allow the outer grid to shrink below the tables natural width. */
+  grid-template-columns: mminmax(0, 1fr);
 }
 
 .auth-card {
@@ -68,6 +70,7 @@ button:disabled {
   width: 100%;
   max-width: 1200px;
   align-self: start;
+  min-width: 0;
 }
 
 .dashboard-header,
@@ -98,10 +101,13 @@ button:disabled {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .table-scroll {
   overflow-x: auto;
+  min-width: 0;
 }
 
 table {
@@ -287,4 +293,44 @@ textarea {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 20px;
+}
+
+/* Responsive CSS - 640px wide or smaller. */
+@media (max-width: 640px) {
+  #root {
+    padding: 12px;
+  }
+
+  .auth-card,
+  .panel {
+    padding: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .incident-form,
+  .incident-details {
+    padding: 16px;
+  }
+
+  /* Stack filters vertically and stretch them across the available width. */
+  .incident-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .incident-filters label {
+    min-width: 0;
+  }
+
+  /* Give incident details one column on small screens. */
+  .incident-details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .button-row > button {
+    flex: 1 1 auto;
+  }
 }
