@@ -19,3 +19,6 @@ htmlcov/
 # react node modules
 node_modules/
 dist/
+
+/frontend/test-results/
+/frontend/playwright-report/
