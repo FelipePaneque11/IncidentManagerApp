@@ -1,0 +1,13 @@
+http:// {
+  redir https://{$APP_PUBLIC_IP}{uri} 308 
+}
+
+https://{$APP_PUBLIC_IP} {
+    tls {
+        issuer acme https://acme-v02.api.letsencrypt.org/directory {
+            profile shortlived
+        }
+    }
+
+    reverse_proxy web:80
+}
