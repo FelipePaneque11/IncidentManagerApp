@@ -1,3 +1,7 @@
+{
+    default_sni {$APP_PUBLIC_IP}
+}
+
 http:// {
   redir https://{$APP_PUBLIC_IP}{uri} 308 
 }
