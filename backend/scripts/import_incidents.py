@@ -3,6 +3,7 @@ import requests
 from getpass import getpass
 from pathlib import Path
 
+API_BASE = "https://34.233.89.180/api"
 
 def import_incidents():
     json_file = (Path(__file__).resolve().parent.parent/"sample_data"/"MOCK_DATA.json")
@@ -14,7 +15,7 @@ def import_incidents():
     # Session remembers our login cookie between requests.
     with requests.Session() as session:
         login_response = session.post(
-            "http://127.0.0.1:8000/auth/login",
+            f"{API_BASE}/auth/login",
             json={
                 "username": input("App username: ").strip(),
                 "password": getpass("App password: "),
@@ -32,7 +33,7 @@ def import_incidents():
             }
 
             response = session.post(
-                "http://127.0.0.1:8000/incidents",
+                f"{API_BASE}/incidents",
                 json=payload,
                 timeout=10,
             )
@@ -44,7 +45,7 @@ def import_incidents():
                 payload["status"] = row["status"]
 
                 response = session.put(
-                    f"http://127.0.0.1:8000/incidents/{incident_id}",
+                   f"{API_BASE}/incidents/{incident_id}",
                     json=payload,
                     timeout=10,
                 )
